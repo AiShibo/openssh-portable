@@ -344,9 +344,10 @@ privsep_preauth(struct ssh *ssh)
 	/* Store a pointer to the kex for later rekeying */
 	pmonitor->m_pkex = &ssh->kex;
 
-	if ((pid = fork()) == -1)
+	// if ((pid = fork()) == -1)
+	if (0)
 		fatal("fork of unprivileged child failed");
-	else if (pid != 0) {
+	else if (1) {
 		debug2("Network child is on pid %ld", (long)pid);
 
 		pmonitor->m_pid = pid;

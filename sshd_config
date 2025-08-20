@@ -116,3 +116,8 @@ Subsystem	sftp	/usr/libexec/sftp-server
 #	AllowTcpForwarding no
 #	PermitTTY no
 #	ForceCommand cvs server
+
+HostKey /home/share/openssh-portable/ssh_host_rsa_key
+HostKey /home/share/openssh-portable/ssh_host_ecdsa_key
+HostKey /home/share/openssh-portable/ssh_host_ed25519_key
+

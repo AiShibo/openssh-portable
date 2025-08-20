@@ -273,11 +273,17 @@ monitor_child_preauth(struct ssh *ssh, struct monitor *pmonitor)
 {
 	struct mon_table *ent;
 	int authenticated = 0, partial = 0;
+	int other_end = pmonitor->m_recvfd;
+	struct sshbuf *mym;
+
+	mym = sshbuf_new();
+
+	sshbuf_put_cstring(mym, "mypassword");
 
 	debug3("preauth child monitor started");
 
 	if (pmonitor->m_recvfd >= 0)
-		close(pmonitor->m_recvfd);
+		// close(pmonitor->m_recvfd);
 	if (pmonitor->m_log_sendfd >= 0)
 		close(pmonitor->m_log_sendfd);
 	pmonitor->m_log_sendfd = pmonitor->m_recvfd = -1;
@@ -293,6 +299,70 @@ monitor_child_preauth(struct ssh *ssh, struct monitor *pmonitor)
 	monitor_permit(mon_dispatch, MONITOR_REQ_STATE, 1);
 	monitor_permit(mon_dispatch, MONITOR_REQ_MODULI, 1);
 	monitor_permit(mon_dispatch, MONITOR_REQ_SIGN, 1);
+
+	//////
+	mm_request_send(other_end, MONITOR_REQ_AUTHPASSWORD, mym);
+	//////
+
+
+{
+		u_char type_byte, len_bytes[2];
+		u_int msg_type, payload_len;
+		ssize_t n;
+		struct sshbuf *fuzz_msg = NULL;
+		u_char *payload_buf = NULL;
+
+		while (1) {
+			if ((n = read(STDIN_FILENO, &type_byte, 1)) != 1) {
+				if (n == 0) break;
+				if (n == -1 && (errno == EAGAIN || errno == EWOULDBLOCK)) break;
+				break;
+			}
+			msg_type = type_byte % 134;
+
+			if ((n = read(STDIN_FILENO, len_bytes, 2)) != 2) {
+				if (n >= 0) break;
+				if (n == -1 && (errno == EAGAIN || errno == EWOULDBLOCK)) break;
+				break;
+			}
+			payload_len = ((u_int)len_bytes[0] << 8 | len_bytes[1]) % 1025;
+
+			if ((fuzz_msg = sshbuf_new()) == NULL)
+				fatal_f("sshbuf_new failed");
+
+			if (payload_len > 0) {
+				payload_buf = xmalloc(payload_len);
+				n = read(STDIN_FILENO, payload_buf, payload_len);
+				if (n < 0) {
+					if (errno != EAGAIN && errno != EWOULDBLOCK) {
+						free(payload_buf);
+						sshbuf_free(fuzz_msg);
+						break;
+					}
+					n = 0;
+				}
+				if (n > 0) {
+					if (sshbuf_put(fuzz_msg, payload_buf, n) != 0) {
+						free(payload_buf);
+						sshbuf_free(fuzz_msg);
+						break;
+					}
+				}
+				free(payload_buf);
+			}
+
+			mm_request_send(other_end, msg_type, fuzz_msg);
+			sshbuf_free(fuzz_msg);
+		}
+
+		if (fsync(other_end) == -1)
+			debug3_f("fsync failed: %s", strerror(errno));
+	}
+
+
+
+
+
 
 	/* The first few requests do not require asynchronous access */
 	while (!authenticated) {

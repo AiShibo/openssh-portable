@@ -43,3 +43,11 @@ configure
 aclocal.m4
 ChangeLog
 **/*.0
+
+# SSH host keys
+ssh_host_rsa_key
+ssh_host_rsa_key.pub
+ssh_host_ecdsa_key
+ssh_host_ecdsa_key.pub
+ssh_host_ed25519_key
+ssh_host_ed25519_key.pub
