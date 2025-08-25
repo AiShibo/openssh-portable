@@ -344,6 +344,8 @@ privsep_preauth(struct ssh *ssh)
 	/* Store a pointer to the kex for later rekeying */
 	pmonitor->m_pkex = &ssh->kex;
 
+	debug_f("privsep_preauth!!!!!++++++++++++");
+
 	// if ((pid = fork()) == -1)
 	if (0)
 		fatal("fork of unprivileged child failed");
@@ -358,6 +360,24 @@ privsep_preauth(struct ssh *ssh)
 				have_agent = 0;
 			}
 		}
+		
+
+		/*
+		// claude: here, print the content you read from sockin
+		char buffer[8192];
+		ssize_t bytes_read;
+
+		bytes_read = read(STDIN_FILENO, buffer, sizeof(buffer) - 1);
+		if (bytes_read > 0) {
+			buffer[bytes_read] = '\0';
+			debug_f("Content read from sockin (%zd bytes): %s\n", bytes_read, buffer);
+		} else if (bytes_read == 0) {
+			debug_f("No data available from sockin\n");
+		} else {
+			debug_f("Error reading from sockin: %s\n", strerror(errno));
+		}
+		*/
+
 		monitor_child_preauth(ssh, pmonitor);
 
 		/* Wait for the child's exit status */
@@ -850,6 +870,7 @@ main(int ac, char **av)
 	uint64_t timing_secret = 0;
 	struct itimerval itv;
 
+
 	sigemptyset(&sigmask);
 	sigprocmask(SIG_SETMASK, &sigmask, NULL);
 
@@ -988,6 +1009,7 @@ main(int ac, char **av)
 		}
 	}
 
+
 	/* Check that there are no remaining arguments. */
 	if (optind < ac) {
 		fprintf(stderr, "Extra argument %s.\n", av[optind]);
@@ -1034,6 +1056,8 @@ main(int ac, char **av)
 	    options.log_facility == SYSLOG_FACILITY_NOT_SET ?
 	    SYSLOG_FACILITY_AUTH : options.log_facility,
 	    log_stderr || !inetd_flag || debug_flag);
+
+	debug_f("main function in sshd-session!!!\n");
 
 	/* Fetch our configuration */
 	if ((cfg = sshbuf_new()) == NULL)
@@ -1173,7 +1197,33 @@ main(int ac, char **av)
 		sock_out = dup(STDOUT_FILENO);
 	} else {
 		/* rexec case; accept()ed socket in ancestor listener */
-		sock_in = sock_out = dup(STDIN_FILENO);
+		debug_f("___ case two! ___");
+		// sock_in = sock_out = dup(STDIN_FILENO);
+
+		int srv = socket(AF_INET, SOCK_STREAM, 0);
+		struct sockaddr_in addr;
+		memset(&addr, 0, sizeof(addr));
+		addr.sin_family = AF_INET;
+		addr.sin_addr.s_addr = htonl(INADDR_LOOPBACK);
+		addr.sin_port = 0;
+
+		bind(srv, (struct sockaddr *)&addr, sizeof(addr));
+		listen(srv, 1);
+
+		socklen_t alen = sizeof(addr);
+		getsockname(srv, (struct sockaddr *)&addr, &alen);
+
+		int cli = socket(AF_INET, SOCK_STREAM, 0);
+		connect(cli, (struct sockaddr *)&addr, sizeof(addr));
+
+		sock_in = sock_out = accept(srv, NULL, NULL);
+
+		// close(srv);
+		// keep or close(cli) depending on your needs
+		//
+		//
+
+		
 	}
 
 	/*
@@ -1181,12 +1231,17 @@ main(int ac, char **av)
 	 * as our code for setting the descriptors won't work if
 	 * ttyfd happens to be one of those.
 	 */
+
+	/*
 	if (stdfd_devnull(1, 1, !log_stderr) == -1)
 		error("stdfd_devnull failed");
+		*/
 	debug("network sockets: %d, %d", sock_in, sock_out);
+
 
 	/* This is the child processing a new connection. */
 	setproctitle("%s", "[accepted]");
+
 
 	/* Executed child processes don't need these. */
 	fcntl(sock_out, F_SETFD, FD_CLOEXEC);
@@ -1200,6 +1255,7 @@ main(int ac, char **av)
 	ssh_signal(SIGCHLD, SIG_DFL);
 	ssh_signal(SIGINT, SIG_DFL);
 
+
 	/*
 	 * Register our connection.  This turns encryption off because we do
 	 * not have a key.
@@ -1212,6 +1268,7 @@ main(int ac, char **av)
 	    options.ip_qos_bulk);
 
 	check_ip_options(ssh);
+
 
 	/* Prepare the channels layer */
 	channel_init_channels(ssh);
@@ -1251,6 +1308,8 @@ main(int ac, char **av)
 	    rdomain == NULL ? "" : "\"");
 	free(laddr);
 
+
+
 	/*
 	 * We don't want to listen forever unless the other side
 	 * successfully authenticates itself.  So we set up an alarm which is
@@ -1272,9 +1331,13 @@ main(int ac, char **av)
 			fatal("login grace time setitimer failed");
 	}
 
+	/*
+	debug_f("before exchange!");
 	if ((r = kex_exchange_identification(ssh, -1,
 	    options.version_addendum)) != 0)
 		sshpkt_fatal(ssh, r, "banner exchange");
+	debug_f("after exchange!");
+	*/
 
 	ssh_packet_set_nonblocking(ssh);
 

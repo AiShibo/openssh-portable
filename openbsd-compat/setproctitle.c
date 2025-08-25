@@ -44,7 +44,7 @@
 #endif
 #include <string.h>
 
-#include <vis.h>
+#include <openbsd_vis.h>
 
 #define SPT_NONE	0	/* don't use it at all */
 #define SPT_PSTAT	1	/* use pstat(PSTAT_SETCMD, ...) */
@@ -150,7 +150,7 @@ setproctitle(const char *fmt, ...)
 	va_end(ap);
 	if (r == -1 || (size_t)r >= sizeof(buf) - len)
 		return;
-	strnvis(ptitle, buf, sizeof(ptitle),
+	openbsd_strnvis(ptitle, buf, sizeof(ptitle),
 	    VIS_CSTYLE|VIS_NL|VIS_TAB|VIS_OCTAL);
 
 #if SPT_TYPE == SPT_PSTAT

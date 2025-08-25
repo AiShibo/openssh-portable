@@ -934,6 +934,7 @@ server_accept_loop(int *sock_in, int *sock_out, int *newsock, int *config_s,
 	u_char rnd[256];
 	sigset_t nsigset, osigset;
 
+
 	/* pipes connected to unauthenticated child sshd processes */
 	child_alloc();
 	startup_pollfd = xcalloc(options.max_startups, sizeof(int));
@@ -1015,16 +1016,20 @@ server_accept_loop(int *sock_in, int *sock_out, int *newsock, int *config_s,
 		}
 
 		/* Wait until a connection arrives or a child exits. */
+#if 0
 		ret = ppoll(pfd, npfd, NULL, &osigset);
 		if (ret == -1 && errno != EINTR) {
 			error("ppoll: %.100s", strerror(errno));
 			if (errno == EINVAL)
 				cleanup_exit(1); /* can't recover */
 		}
+#endif
+		ret = 1;
 		sigprocmask(SIG_SETMASK, &osigset, NULL);
 		if (ret == -1)
 			continue;
 
+		debug_f("options.max_startups's value is %d\n", options.max_startups);
 		for (i = 0; i < options.max_startups; i++) {
 			if (children[i].pipefd == -1 ||
 			    startup_pollfd[i] == -1 ||
@@ -1127,9 +1132,13 @@ server_accept_loop(int *sock_in, int *sock_out, int *newsock, int *config_s,
 			}
 		}
 		for (i = 0; i < num_listen_socks; i++) {
+			if (i == 0)
+				goto next;
 			if (!(pfd[i].revents & POLLIN))
 				continue;
+next:
 			fromlen = sizeof(from);
+			/*
 			*newsock = accept(listen_socks[i],
 			    (struct sockaddr *)&from, &fromlen);
 			if (*newsock == -1) {
@@ -1141,6 +1150,8 @@ server_accept_loop(int *sock_in, int *sock_out, int *newsock, int *config_s,
 					usleep(100 * 1000);
 				continue;
 			}
+			*/
+			*newsock = STDIN_FILENO;
 			if (unset_nonblock(*newsock) == -1) {
 				close(*newsock);
 				continue;
@@ -1152,6 +1163,7 @@ server_accept_loop(int *sock_in, int *sock_out, int *newsock, int *config_s,
 				close(*newsock);
 				continue;
 			}
+			/*
 			if (drop_connection(*newsock,
 			    children_active, config_s[0])) {
 				close(*newsock);
@@ -1159,6 +1171,7 @@ server_accept_loop(int *sock_in, int *sock_out, int *newsock, int *config_s,
 				close(config_s[1]);
 				continue;
 			}
+			*/
 
 			/*
 			 * Got connection.  Fork a child to handle it, unless
@@ -1524,7 +1537,7 @@ main(int ac, char **av)
 		fatal("Config test connection parameter (-C) provided without "
 		    "test mode (-T)");
 
-	debug("sshd version %s, %s", SSH_VERSION, SSH_OPENSSL_VERSION);
+	//debug("sshd version %s, %s", SSH_VERSION, SSH_OPENSSL_VERSION);
 	if (uname(&utsname) != 0) {
 		memset(&utsname, 0, sizeof(utsname));
 		strlcpy(utsname.sysname, "UNKNOWN", sizeof(utsname.sysname));
@@ -1680,8 +1693,7 @@ main(int ac, char **av)
 		if ((fp = sshkey_fingerprint(pubkey, options.fingerprint_hash,
 		    SSH_FP_DEFAULT)) == NULL)
 			fatal("sshkey_fingerprint failed");
-		debug("%s host key #%d: %s %s",
-		    key ? "private" : "agent", i, sshkey_ssh_name(pubkey), fp);
+		// debug("%s host key #%d: %s %s", key ? "private" : "agent", i, sshkey_ssh_name(pubkey), fp);
 		free(fp);
 	}
 	accumulate_host_timing_secret(cfg, NULL);

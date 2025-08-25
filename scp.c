@@ -122,7 +122,7 @@
 #include <time.h>
 #include <unistd.h>
 #if defined(HAVE_STRNVIS) && defined(HAVE_VIS_H) && !defined(BROKEN_STRNVIS)
-#include <vis.h>
+#include <openbsd_vis.h>
 #endif
 
 #include "xmalloc.h"
@@ -1411,7 +1411,7 @@ source(int argc, char **argv)
 		if ((fd = open(name, O_RDONLY|O_NONBLOCK)) == -1)
 			goto syserr;
 		if (strchr(name, '\n') != NULL) {
-			strnvis(encname, name, sizeof(encname), VIS_NL);
+			openbsd_strnvis(encname, name, sizeof(encname), VIS_NL);
 			name = encname;
 		}
 		if (fstat(fd, &stb) == -1) {

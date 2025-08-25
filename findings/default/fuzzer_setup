@@ -1,0 +1,8 @@
+# environment variables:
+AFL_CUSTOM_INFO_PROGRAM=/home/share/openssh-portable-try2/sshd
+AFL_CUSTOM_INFO_PROGRAM_ARGV=-p 2222 -d
+AFL_CUSTOM_INFO_OUT=findings/default
+AFL_PATH=/root/AFLplusplus-4.33c
+AFL_USE_ASAN=1
+# command line:
+'afl-fuzz' '-i' 'in' '-o' 'findings' '-g' '4000' '-m' 'none' '--' '/home/share/openssh-portable-try2/sshd' '-p' '2222' '-d'

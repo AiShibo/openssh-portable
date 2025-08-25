@@ -40,7 +40,7 @@
 #include "base64.h"
 #include "sigact.h"
 #include "readpassphrase.h"
-#include "vis.h"
+#include "openbsd_vis.h"
 #include "getrrsetbyname.h"
 #include "sha1.h"
 #include "sha2.h"

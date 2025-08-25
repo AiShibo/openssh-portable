@@ -33,7 +33,7 @@
 #include <stdlib.h>
 #include <string.h>
 #if defined(HAVE_STRNVIS) && defined(HAVE_VIS_H) && !defined(BROKEN_STRNVIS)
-# include <vis.h>
+# include <openbsd_vis.h>
 #endif
 #ifdef HAVE_WCHAR_H
 # include <wchar.h>
@@ -192,7 +192,7 @@ vasnmprintf(char **str, size_t maxsz, int *wp, const char *fmt, va_list ap)
 					ret = -1;
 					break;
 				}
-				tp = vis(dp, *sp, VIS_OCTAL | VIS_ALL, 0);
+				tp = openbsd_vis(dp, *sp, VIS_OCTAL | VIS_ALL, 0);
 				width = tp - dp;
 				total_width += width;
 				dp = tp;

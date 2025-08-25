@@ -49,7 +49,7 @@
 #include <time.h>
 #include <unistd.h>
 #if defined(HAVE_STRNVIS) && defined(HAVE_VIS_H) && !defined(BROKEN_STRNVIS)
-# include <vis.h>
+# include <openbsd_vis.h>
 #endif
 
 #include "log.h"
@@ -397,7 +397,7 @@ do_log(LogLevel level, int force, const char *suffix, const char *fmt,
 		snprintf(fmtbuf, sizeof(fmtbuf), "%s: %s", msgbuf, suffix);
 		strlcpy(msgbuf, fmtbuf, sizeof(msgbuf));
 	}
-	strnvis(fmtbuf, msgbuf, sizeof(fmtbuf),
+	openbsd_strnvis(fmtbuf, msgbuf, sizeof(fmtbuf),
 	    log_on_stderr ? LOG_STDERR_VIS : LOG_SYSLOG_VIS);
 	if (log_handler != NULL) {
 		/* Avoid recursion */

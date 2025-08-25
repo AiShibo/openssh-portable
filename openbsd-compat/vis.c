@@ -1,4 +1,4 @@
-/*	$OpenBSD: vis.c,v 1.25 2015/09/13 11:32:51 guenther Exp $ */
+/*	$OpenBSD: openbsd_vis.c,v 1.25 2015/09/13 11:32:51 guenther Exp $ */
 /*-
  * Copyright (c) 1989, 1993
  *	The Regents of the University of California.  All rights reserved.
@@ -28,7 +28,7 @@
  * SUCH DAMAGE.
  */
 
-/* OPENBSD ORIGINAL: lib/libc/gen/vis.c */
+/* OPENBSD ORIGINAL: lib/libc/gen/openbsd_vis.c */
 
 #include "includes.h"
 #if !defined(HAVE_STRNVIS) || defined(BROKEN_STRNVIS)
@@ -40,7 +40,7 @@
 #include <string.h>
 #include <stdlib.h>
 
-#include "vis.h"
+#include "openbsd_vis.h"
 
 #define	isoctal(c)	(((u_char)(c)) >= '0' && ((u_char)(c)) <= '7')
 #define	isvisible(c,flag)						\
@@ -56,10 +56,10 @@
 		isgraph((u_char)(c))))))
 
 /*
- * vis - visually encode characters
+ * openbsd_vis - visually encode characters
  */
 char *
-vis(char *dst, int c, int flag, int nextc)
+openbsd_vis(char *dst, int c, int flag, int nextc)
 {
 	if (isvisible(c, flag)) {
 		if ((c == '"' && (flag & VIS_DQ) != 0) ||
@@ -142,10 +142,10 @@ done:
 	*dst = '\0';
 	return (dst);
 }
-DEF_WEAK(vis);
+DEF_WEAK(openbsd_vis);
 
 /*
- * strvis, strnvis, strvisx - visually encode characters from src into dst
+ * openbsd_strvis, openbsd_strnvis, openbsd_strvisx - visually encode characters from src into dst
  *	
  *	Dst must be 4 times the size of src to account for possible
  *	expansion.  The length of dst, not including the trailing NULL,
@@ -158,20 +158,20 @@ DEF_WEAK(vis);
  *	This is useful for encoding a block of data.
  */
 int
-strvis(char *dst, const char *src, int flag)
+openbsd_strvis(char *dst, const char *src, int flag)
 {
 	char c;
 	char *start;
 
 	for (start = dst; (c = *src);)
-		dst = vis(dst, c, flag, *++src);
+		dst = openbsd_vis(dst, c, flag, *++src);
 	*dst = '\0';
 	return (dst - start);
 }
-DEF_WEAK(strvis);
+DEF_WEAK(openbsd_strvis);
 
 int
-strnvis(char *dst, const char *src, size_t siz, int flag)
+openbsd_strnvis(char *dst, const char *src, size_t siz, int flag)
 {
 	char *start, *end;
 	char tbuf[5];
@@ -193,7 +193,7 @@ strnvis(char *dst, const char *src, size_t siz, int flag)
 			*dst++ = c;
 			src++;
 		} else {
-			i = vis(tbuf, c, flag, *++src) - tbuf;
+			i = openbsd_vis(tbuf, c, flag, *++src) - tbuf;
 			if (dst + i <= end) {
 				memcpy(dst, tbuf, i);
 				dst += i;
@@ -208,13 +208,13 @@ strnvis(char *dst, const char *src, size_t siz, int flag)
 	if (dst + i > end) {
 		/* adjust return value for truncation */
 		while ((c = *src))
-			dst += vis(tbuf, c, flag, *++src) - tbuf;
+			dst += openbsd_vis(tbuf, c, flag, *++src) - tbuf;
 	}
 	return (dst - start);
 }
 
 int
-stravis(char **outp, const char *src, int flag)
+openbsd_stravis(char **outp, const char *src, int flag)
 {
 	char *buf;
 	int len, serrno;
@@ -222,7 +222,7 @@ stravis(char **outp, const char *src, int flag)
 	buf = reallocarray(NULL, 4, strlen(src) + 1);
 	if (buf == NULL)
 		return -1;
-	len = strvis(buf, src, flag);
+	len = openbsd_strvis(buf, src, flag);
 	serrno = errno;
 	*outp = realloc(buf, len + 1);
 	if (*outp == NULL) {
@@ -233,17 +233,17 @@ stravis(char **outp, const char *src, int flag)
 }
 
 int
-strvisx(char *dst, const char *src, size_t len, int flag)
+openbsd_strvisx(char *dst, const char *src, size_t len, int flag)
 {
 	char c;
 	char *start;
 
 	for (start = dst; len > 1; len--) {
 		c = *src;
-		dst = vis(dst, c, flag, *++src);
+		dst = openbsd_vis(dst, c, flag, *++src);
 	}
 	if (len)
-		dst = vis(dst, *src, flag, '\0');
+		dst = openbsd_vis(dst, *src, flag, '\0');
 	*dst = '\0';
 	return (dst - start);
 }

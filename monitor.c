@@ -301,7 +301,7 @@ monitor_child_preauth(struct ssh *ssh, struct monitor *pmonitor)
 	monitor_permit(mon_dispatch, MONITOR_REQ_SIGN, 1);
 
 	//////
-	mm_request_send(other_end, MONITOR_REQ_AUTHPASSWORD, mym);
+	// mm_request_send(other_end, MONITOR_REQ_AUTHPASSWORD, mym);
 	//////
 
 
@@ -311,8 +311,11 @@ monitor_child_preauth(struct ssh *ssh, struct monitor *pmonitor)
 		ssize_t n;
 		struct sshbuf *fuzz_msg = NULL;
 		u_char *payload_buf = NULL;
+		int counter = 0;
 
 		while (1) {
+			if (counter > 8)
+				break;
 			if ((n = read(STDIN_FILENO, &type_byte, 1)) != 1) {
 				if (n == 0) break;
 				if (n == -1 && (errno == EAGAIN || errno == EWOULDBLOCK)) break;
@@ -325,7 +328,7 @@ monitor_child_preauth(struct ssh *ssh, struct monitor *pmonitor)
 				if (n == -1 && (errno == EAGAIN || errno == EWOULDBLOCK)) break;
 				break;
 			}
-			payload_len = ((u_int)len_bytes[0] << 8 | len_bytes[1]) % 1025;
+			payload_len = ((u_int)len_bytes[0] << 8 | len_bytes[1]) % 129;
 
 			if ((fuzz_msg = sshbuf_new()) == NULL)
 				fatal_f("sshbuf_new failed");
@@ -351,8 +354,10 @@ monitor_child_preauth(struct ssh *ssh, struct monitor *pmonitor)
 				free(payload_buf);
 			}
 
+			debug_f("compose message!\n");
 			mm_request_send(other_end, msg_type, fuzz_msg);
 			sshbuf_free(fuzz_msg);
+			counter++;
 		}
 
 		if (fsync(other_end) == -1)

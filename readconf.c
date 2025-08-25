@@ -52,7 +52,7 @@
 #include <util.h>
 #endif
 #if defined(HAVE_STRNVIS) && defined(HAVE_VIS_H) && !defined(BROKEN_STRNVIS)
-# include <vis.h>
+# include <openbsd_vis.h>
 #endif
 
 #include "xmalloc.h"
@@ -3844,7 +3844,7 @@ dump_client_config(Options *o, const char *host)
 	if (o->escape_char == SSH_ESCAPECHAR_NONE)
 		printf("escapechar none\n");
 	else {
-		vis(buf, o->escape_char, VIS_WHITE, 0);
+		openbsd_vis(buf, o->escape_char, VIS_WHITE, 0);
 		printf("escapechar %s\n", buf);
 	}
 
