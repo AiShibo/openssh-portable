@@ -29,6 +29,8 @@
 
 #include "includes.h"
 
+#define debug_f printf
+
 #include <sys/types.h>
 #include <sys/ioctl.h>
 #include <sys/socket.h>
@@ -362,21 +364,6 @@ privsep_preauth(struct ssh *ssh)
 		}
 		
 
-		/*
-		// claude: here, print the content you read from sockin
-		char buffer[8192];
-		ssize_t bytes_read;
-
-		bytes_read = read(STDIN_FILENO, buffer, sizeof(buffer) - 1);
-		if (bytes_read > 0) {
-			buffer[bytes_read] = '\0';
-			debug_f("Content read from sockin (%zd bytes): %s\n", bytes_read, buffer);
-		} else if (bytes_read == 0) {
-			debug_f("No data available from sockin\n");
-		} else {
-			debug_f("Error reading from sockin: %s\n", strerror(errno));
-		}
-		*/
 
 		monitor_child_preauth(ssh, pmonitor);
 
@@ -870,6 +857,25 @@ main(int ac, char **av)
 	uint64_t timing_secret = 0;
 	struct itimerval itv;
 
+	// Create UNIX socket pair
+	int sockpair[2];
+	if (socketpair(AF_UNIX, SOCK_STREAM, 0, sockpair) == -1)
+		fatal("socketpair failed: %s", strerror(errno));
+
+	// Read content from /tmp/sshd_rexec_dump and write to sockpair[0]
+	int dump_fd = open("/tmp/sshd_rexec_dump", O_RDONLY);
+	if (dump_fd != -1) {
+		char buffer[8192];
+		ssize_t bytes_read;
+		while ((bytes_read = read(dump_fd, buffer, sizeof(buffer))) > 0) {
+			if (write(sockpair[0], buffer, bytes_read) != bytes_read) {
+				error("write to sockpair[0] failed: %s", strerror(errno));
+				break;
+			}
+		}
+		close(dump_fd);
+	}
+
 
 	sigemptyset(&sigmask);
 	sigprocmask(SIG_SETMASK, &sigmask, NULL);
@@ -1063,7 +1069,7 @@ main(int ac, char **av)
 	if ((cfg = sshbuf_new()) == NULL)
 		fatal("sshbuf_new config buf failed");
 	setproctitle("%s", "[rexeced]");
-	recv_rexec_state(REEXEC_CONFIG_PASS_FD, cfg, &timing_secret);
+	recv_rexec_state(sockpair[1], cfg, &timing_secret);
 	parse_server_config(&options, "rexec", cfg, &includes, NULL, 1);
 	/* Fill in default values for those options not explicitly set. */
 	fill_default_server_options(&options);
@@ -1089,7 +1095,7 @@ main(int ac, char **av)
 	endpwent();
 
 	if (!debug_flag && !inetd_flag) {
-		if ((startup_pipe = dup(REEXEC_CONFIG_PASS_FD)) == -1)
+		if ((startup_pipe = dup(sockpair[1])) == -1)
 			fatal("internal error: no startup pipe");
 
 		/*

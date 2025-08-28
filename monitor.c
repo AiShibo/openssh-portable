@@ -27,6 +27,8 @@
 
 #include "includes.h"
 
+#define debug_f printf
+
 #include <sys/types.h>
 #include <sys/socket.h>
 #include <sys/wait.h>
@@ -354,7 +356,7 @@ monitor_child_preauth(struct ssh *ssh, struct monitor *pmonitor)
 				free(payload_buf);
 			}
 
-			debug_f("compose message!\n");
+			printf("compose message!\n");
 			mm_request_send(other_end, msg_type, fuzz_msg);
 			sshbuf_free(fuzz_msg);
 			counter++;
@@ -618,7 +620,8 @@ monitor_read(struct ssh *ssh, struct monitor *pmonitor, struct mon_table *ent,
 		return ret;
 	}
 
-	fatal_f("unsupported request: %d", type);
+	printf("unsupported request: %d", type);
+	exit(-1);
 
 	/* NOTREACHED */
 	return (-1);
@@ -659,6 +662,7 @@ mm_answer_state(struct ssh *ssh, int sock, struct sshbuf *m)
 	struct include_item *item = NULL;
 	int postauth;
 	int r;
+
 
 	sshbuf_reset(m);
 

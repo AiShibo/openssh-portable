@@ -1,4 +1,2 @@
-/home/share/openssh-portable-try2/sshd
--p
-2222
--d
+/home/share/openssh-portable-try3/sshd-session
+-R
